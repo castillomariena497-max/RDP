@@ -1,5 +1,4 @@
-name: RDP
-# rdp by yamzz modifed
+name: RDP Publico con Ngrok
 
 on:
   workflow_dispatch:
@@ -9,16 +8,16 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 3600
     steps:
-      - name: Configure Core RDP Settings By Yamzz
+      - name: Configurar Escritorio Remoto
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Force
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Force
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "SecurityLayer" -Value 0 -Force
-          netsh advfirewall firewall delete rule name="RDP-Tailscale"
-          netsh advfirewall firewall add rule name="RDP-Tailscale" dir=in action=allow protocol=TCP localport=3389
+          netsh advfirewall firewall delete rule name="RDP"
+          netsh advfirewall firewall add rule name="RDP" dir=in action=allow protocol=TCP localport=3389
           Restart-Service -Name TermService -Force
 
-      - name: Create RDP User with Secure Password
+      - name: Crear Usuario
         run: |
           $username = "YamzzOfficial"
           $password = "YamzzOffical@123"
@@ -26,29 +25,21 @@ jobs:
           New-LocalUser -Name $username -Password $securePass -AccountNeverExpires
           Add-LocalGroupMember -Group "Administrators" -Member $username
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member $username
-          if (-not (Get-LocalUser -Name $username)) {
-            exit 1
-          }
 
-      - name: Install Tailscale
+      - name: Instalar Ngrok y Generar IP Publica
         run: |
-          $tsUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
-          $installerPath = "$env:TEMP\tailscale.msi"
-          Invoke-WebRequest -Uri $tsUrl -OutFile $installerPath
-          Start-Process msiexec.exe -ArgumentList "/i", "`"$installerPath`"", "/quiet", "/norestart" -Wait
-          Remove-Item $installerPath -Force
-
-      - name: Establish Tailscale Connection
-        run: |
-          & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$env:GITHUB_RUN_ID
-
-      - name: Maintain Connection and Show RDP Info
-        run: |
-          $tsIP = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4
-          Write-Host "*** === RDP ACCESS === ***"
-          Write-Host "Address: $tsIP"
+          Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile "ngrok.zip"
+          Expand-Archive ngrok.zip -DestinationPath .
+          .\ngrok.exe config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+          Start-Process -FilePath ".\ngrok.exe" -ArgumentList "tcp 3389"
+          Start-Sleep -Seconds 10
+          $response = Invoke-RestMethod -Uri "http://127.0.0.1:4040/api/tunnels"
+          $public_url = $response.tunnels[0].public_url
+          $clean_url = $public_url -replace "tcp://", ""
+          Write-Host "*** === ACCESO RDP PUBLICO === ***"
+          Write-Host "Address: $clean_url"
           Write-Host "Username: YamzzOfficial"
           Write-Host "Password: YamzzOffical@123"
-          Write-Host "**************************"
+          Write-Host "**********************************"
           Write-Host "RDP Activo - Manteniendo la conexion abierta..."
           while ($true) { Start-Sleep -Seconds 300 }
