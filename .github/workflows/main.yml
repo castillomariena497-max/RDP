@@ -6,7 +6,7 @@ on:
 jobs:
   secure-rdp:
     runs-on: windows-latest
-    timeout-minutes: 3600
+    timeout-minutes: 360
     steps:
       - name: Configurar Escritorio Remoto
         run: |
@@ -57,7 +57,7 @@ jobs:
                   }
               } catch {
                   $Intentos++
-                  Write-Host "Intento $Intentos: Ngrok aún no responde, esperando..."
+                  Write-Host "Intento ${Intentos}: Ngrok aún no responde, esperando..."
               }
           }
           
