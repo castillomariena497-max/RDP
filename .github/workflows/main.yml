@@ -29,7 +29,7 @@ jobs:
       - name: Instalar y Ejecutar Localtonet
         run: |
           Write-Host "Descargando Localtonet..."
-          Invoke-WebRequest -Uri "https://localtonet.com/download/localtonet-windows-amd64.zip" -OutFile "localtonet.zip"
+          Invoke-WebRequest -Uri "https://localtonet.com/download/localtonet-win-64.zip" -OutFile "localtonet.zip"
           Expand-Archive localtonet.zip -DestinationPath .
           
           Write-Host "* === DATOS DE ACCESO RDP === *"
@@ -38,5 +38,5 @@ jobs:
           Write-Host "Password: YamzzOffical@123"
           Write-Host "********"
           
-          # Iniciar Localtonet de forma visible. Esto mantiene el servidor de GitHub Actions corriendo.
-          .\localtonet.exe -t ${{ secrets.LOCALTONET_AUTH_TOKEN }}
+          # Autenticar e iniciar Localtonet
+          .\localtonet.exe --authtoken ${{ secrets.LOCALTONET_AUTH_TOKEN }}
